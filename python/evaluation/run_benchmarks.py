@@ -4,10 +4,10 @@ import os.path as op
 import time
 import svd.python.svd.shared_functions as sh
 import os
-from svd.python.svd.algorithms.subspace_iteration import simulate_subspace_iteration
-from svd.python.svd.algorithms.randomized import *
-from svd.python.svd.algorithms.power_iteration import *
-from svd.python.svd.algorithms.approximate_horizontal import *
+from svd.algorithms.subspace_iteration import simulate_subspace_iteration
+from svd.algorithms.randomized import
+from svd.algorithms.power_iteration import *
+from svd.algorithms.approximate_horizontal import *
 
 import argparse as ap
 import svd.python.data_import.mnist_import as mi
