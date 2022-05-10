@@ -1,5 +1,5 @@
-import svd.python.svd.convenience as cv
-import svd.python.svd.comparison as co
+import svd.convenience as cv
+import svd.comparison as co
 import numpy as np
 import os.path as op
 import time

@@ -1,4 +1,4 @@
-import svd.python.svd.shared_functions as sh
+import svd.shared_functions as sh
 import time
 import numpy as np
 import scipy.linalg as la

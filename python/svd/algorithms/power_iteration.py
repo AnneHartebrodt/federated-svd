@@ -1,8 +1,8 @@
 import scipy.linalg as la
-import svd.python.svd.shared_functions as sh
-import svd.python.svd.algorithms as qr
-from svd.python.svd.logging import *
-from svd.python.svd.logging import TimerCounter
+import svd.shared_functions as sh
+import svd.algorithms as qr
+from svd.logging import *
+from svd.logging import TimerCounter
 
 ####### ORIGINAL POWER ITERATION SCHEME #######
 def residuals(V, a=None, sums=None):

@@ -20,9 +20,9 @@
 """
 import numpy as np
 import scipy.linalg as la
-import svd.python.svd.shared_functions as sh
-import svd.python.svd.algorithms.qr as qr
-from svd.python.svd.logging import *
+import svd.shared_functions as sh
+import svd.algorithms.qr as qr
+from svd.logging import *
 
 
 ####### MATRIX POWER ITERATION SCHEME #######

@@ -1,6 +1,6 @@
 import numpy as np
-from svd.python.svd.logging import *
-import svd.python.svd.shared_functions as sh
+from svd.logging import *
+import svd.shared_functions as sh
 
 def approximate_vertical(data_list, k=10, factor_k=2, filename=None):
     data_list = [d.T for d in data_list]

@@ -22,9 +22,9 @@
 
 import numpy as np
 import scipy as sc
-import svd.python.svd.shared_functions as sh
+import svd.shared_functions as sh
 import scipy.linalg as la
-import svd.python.svd.comparison as co
+import svd.comparison as co
 
 
 

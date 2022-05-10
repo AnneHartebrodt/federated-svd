@@ -2,21 +2,21 @@ import numpy as np
 import scipy.sparse.linalg as lsa
 import os.path as op
 import time
-import svd.python.svd.shared_functions as sh
+import svd.shared_functions as sh
 import os
 from svd.algorithms.subspace_iteration import simulate_subspace_iteration
-from svd.algorithms.randomized import
+from svd.algorithms.randomized import *
 from svd.algorithms.power_iteration import *
 from svd.algorithms.approximate_horizontal import *
 
 import argparse as ap
-import svd.python.data_import.mnist_import as mi
-import svd.python.data_import.spreadsheet_import as si
+import data_import.mnist_import as mi
+import data_import.spreadsheet_import as si
 from scipy.sparse import coo_matrix
-import svd.python.data_import.gwas_import as gi
-from svd.python.svd.logging import *
+import data_import.gwas_import as gi
+from svd.logging import *
 
-from svd.python.evaluation.data_aggregation import *
+from evaluation.data_aggregation import *
 
 
 ####### BENCHMARK RUNNER #######

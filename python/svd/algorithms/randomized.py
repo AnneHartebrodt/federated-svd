@@ -1,8 +1,8 @@
-from svd.python.svd.algorithms.subspace_iteration import simulate_subspace_iteration
+from svd.algorithms.subspace_iteration import simulate_subspace_iteration
 import scipy.linalg as la
 import scipy.sparse.linalg as lsa
-from svd.python.svd.logging import *
-import svd.python.svd.shared_functions as sh
+from svd.logging import *
+import svd.shared_functions as sh
 
 def run_randomized(data_list, k, I, factor_k=2,filename=None, u=None, choices=None, precomputed_pca=None, fractev=1.0,
                            federated_qr=False, v=None, gradient=False, epsilon=10e-9, g_ortho_freq=1, g_init = None):
