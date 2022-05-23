@@ -14,11 +14,18 @@ do
 
 mkdir -p $resultpath/chr${e}
 
-python3 $gwaspath/federated-svd/python/evaluation/run_benchmarks.py -f \
-$datapath/chr${e}/chr${e} \
---filetype 'gwas' --center -o $resultpath/chr${e}.$i -r 10 -k 10 \
- -i 1000 --sep '\t' --header 0 --rownames 0 --names chr${e}.$i \
- --vert -s 5 --ortho_freq 1000 --scaled --sf 'traw.scaled.'$i
-done
-done
+#python3 $gwaspath/federated-svd/python/evaluation/run_benchmarks.py -f \
+#$datapath/chr${e}/chr${e} \
+#--filetype 'gwas' --center -o $resultpath/chr${e}.$i -r 10 -k 10 \
+# -i 1000 --sep '\t' --header 0 --rownames 0 --names chr${e}.$i \
+# --vert -s 5 --ortho_freq 1000 --scaled --sf 'traw.scaled.'$i
+#done
+#done
 
+for e in {1..2} ;
+do
+for i in 1000000 500000 all ;
+do
+python3 $gwaspath/federated-svd/python/evaluation/data_aggregation.py -f $datapath/chr${e}/chr${e}/vertical
+done
+done

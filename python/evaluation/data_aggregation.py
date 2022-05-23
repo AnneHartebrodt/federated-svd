@@ -4,7 +4,7 @@ import numpy as np
 import os.path as op
 import os
 import re
-
+import argparse as ap
 
 
 
@@ -32,12 +32,16 @@ def create_dataframe(basepath, suffix):
     return data_list
 
 if __name__ == '__main__':
-    basepath = "/home/anne/Documents/featurecloud/pca/approximative-vertical/results/matrix"
-    # create_dataframe(basepath=basepath, suffix='.angles.u')
-    # create_dataframe(basepath=basepath, suffix='.angles.v')
-    # df = create_dataframe(basepath=basepath, suffix='.mev.u')
-    # df = create_dataframe(basepath=basepath, suffix='.mev.v')
-    # #
-    # df = create_dataframe(basepath=basepath, suffix='.eo')
-    # df = create_dataframe(basepath=basepath, suffix='.transmission')
-    df = create_dataframe(basepath=basepath, suffix='.transmission')
+    parser = ap.ArgumentParser(description='Split datasets and run "federated PCA"')
+    parser.add_argument('-o', metavar='outdir', type=str, help='filename of data file; default tab separated')
+    args = parser.parse_args()
+
+    outdir = args.outdir
+    outd = ['matrix', 'vector']
+    for od in outd:
+        basepath = op.join(outdir, od)
+        for suf in ['.angles.u', '.angles.v', '.mev.u', 'mev.v', '.transmission', '.eo']:
+            try:
+                create_dataframe(basepath=basepath, suffix=suf)
+            except:
+                pass

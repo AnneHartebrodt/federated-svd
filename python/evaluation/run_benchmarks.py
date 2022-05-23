@@ -1,10 +1,4 @@
-import numpy as np
-import scipy.sparse.linalg as lsa
-import os.path as op
-import time
-import svd.shared_functions as sh
-import os
-from svd.algorithms.subspace_iteration import simulate_subspace_iteration
+
 from svd.algorithms.randomized import *
 from svd.algorithms.power_iteration import *
 from svd.algorithms.approximate_horizontal import *
@@ -160,13 +154,13 @@ if __name__ == '__main__':
         #
         dataset_name = 'mnist'
         maxit = 500
-        nr_repeats = 10
+        nr_repeats = 1
         k = 10
         splits = [5]
         outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results'
         the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsilon=1e-9,
                                            unequal=False, precomputed_pca=None, ortho_freq=1000)
-        print(time.monotonic() - start)
+        print('TIME: '+ str(time.monotonic() - start))
         outd = ['matrix', 'vector']
         for od in outd:
             basepath = op.join(outdir,od)
@@ -199,8 +193,6 @@ if __name__ == '__main__':
                             help='filename of orthogonal file')
         parser.add_argument('--scaled', action='store_true', help='data is prescaled')
         parser.add_argument('--unequal', default=None, type=str, help='split unequal, load split file')
-        parser.add_argument('--vert', action='store_true', help='run vertical split test')
-        parser.add_argument('--hor', action='store_true', help='run horizontal split test')
         parser.add_argument('--ortho_freq',type=int, default=1, help='orthonormalisatio frequency for G')
         args = parser.parse_args()
 
@@ -292,9 +284,7 @@ if __name__ == '__main__':
         else:
             precomputed_pca = None
 
-        # vertical test
-        if args.vert:
-            vertical = op.join(outdir, 'vertical')
-            os.makedirs(vertical, exist_ok=True)
-            the_epic_loop(data=data, dataset_name=dataset_name, maxit=maxit, nr_repeats=nr_repeats, k=k, splits=splits,
-                          outdir=vertical, precomputed_pca=precomputed_pca, unequal=unequal, ortho_freq=ortho_freq)
+
+        os.makedirs(outdir, exist_ok=True)
+        the_epic_loop(data=data, dataset_name=dataset_name, maxit=maxit, nr_repeats=nr_repeats, k=k, splits=splits,
+                        outdir=outdir, precomputed_pca=precomputed_pca, unequal=unequal, ortho_freq=ortho_freq)

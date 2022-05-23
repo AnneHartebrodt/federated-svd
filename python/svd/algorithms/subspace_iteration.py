@@ -116,6 +116,7 @@ def simulate_subspace_iteration(local_data, k, maxit, filename=None, u=None, cho
             if gradient:
                 G_list[i] = np.dot(local_data[i].T, H_i) + G_list[i]
             else:
+
                 # Use power iterations based update of the eigenvalue scheme
                 mot.start()
                 G_list[i] = np.dot(local_data[i].T, H_i)
