@@ -150,7 +150,7 @@ def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsi
 ####### BENCHMARK RUNNER #######
 
 if __name__ == '__main__':
-    local=True
+    local=False
     np.random.seed(11)
     if local:
         start = time.monotonic()
@@ -198,6 +198,7 @@ if __name__ == '__main__':
         parser.add_argument('--orthovector', metavar='compare', default=None, type=str,
                             help='filename of orthogonal file')
         parser.add_argument('--scaled', action='store_true', help='data is prescaled')
+        parser.add_argument('--sf', type=str, help='scaled file', default=None)
         parser.add_argument('--unequal', default=None, type=str, help='split unequal, load split file')
         parser.add_argument('--vert', action='store_true', help='run vertical split test')
         parser.add_argument('--hor', action='store_true', help='run horizontal split test')
@@ -279,7 +280,8 @@ if __name__ == '__main__':
                 data = gi.read_scale_write(infile=traw_nosex, outfile=path + '.traw.scaled', maf=0.01)
 
             else:
-                data = pd.read_table(path + '.traw.scaled', header=None, sep='\t')
+                print('Reading: '+path+args.sf)
+                data = pd.read_table(path+args.sf, header=None, sep='\t')
                 data = data.values
             nr_samples = data.shape[0]
             nr_features = data.shape[1]
