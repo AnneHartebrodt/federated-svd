@@ -53,10 +53,14 @@ def simulate_subspace_iteration(local_data, k, maxit, filename=None, u=None, cho
         print(d.shape)
     start = 0
 
+    aol = AccuracyLogger()
+    aol.open(filename)
+
     if g_init is None:
         G_i = sh.generate_random_gaussian(total_len, k)
         G_i, R = la.qr(G_i, mode='economic')
         iterations = 0
+
     else:
         G_i = np.concatenate(g_init, axis=0)
         iterations = 1
@@ -67,8 +71,7 @@ def simulate_subspace_iteration(local_data, k, maxit, filename=None, u=None, cho
     tol = TransmissionLogger()
     tol.open(filename)
 
-    aol = AccuracyLogger()
-    aol.open(filename)
+
 
     # send parts to local sites
     for i in range(len(local_data)):

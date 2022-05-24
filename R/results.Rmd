@@ -1,3 +1,9 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r show=False}
 require(data.table)
 require(ggplot2)
 require(dplyr)
@@ -8,7 +14,11 @@ require(facetscales)
 require(ggpubr)
 require(grid)
 require(gridExtra)
+```
 
+
+
+```{r }
 
 combine_data<-function(x){
   # Combine vector and matrix data sets.
@@ -66,8 +76,11 @@ combine_data<-function(x){
   return(list(iterations, data))
 }
 
-ob<-combine_data('/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist/')
+```
 
+## MNIST
+
+```{r, show=F}
 # manually fix the scales for the convergence plots
 scales_x <- list(
   `Eigenvector 1` = scale_x_continuous(limits = c(0, 30)),
@@ -97,6 +110,11 @@ extra_theme <-theme(axis.text.y = element_text( size=8),
                     legend.margin = margin(t = -12, r = 0, b = 0, l = 0),
                     axis.text.x = element_text(angle = 90 , size = 8, hjust = 1, vjust = 0.5, margin = margin(t = 1, r = 0, b = 0, l = 0)))
 
+```
+
+```{r, echo=F}
+ob<-combine_data('/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist/')
+data<-ob[[2]]
 # plot the convergence lines.
 conv<-ggplot(data[eigenvector %in% c('Eigenvector 1', 'Eigenvector 5', 'Eigenvector 10')], 
              aes(iteration, mean_angle, group=interaction(Algorithm, Algorithm), color=Algorithm))+
@@ -104,14 +122,13 @@ conv<-ggplot(data[eigenvector %in% c('Eigenvector 1', 'Eigenvector 5', 'Eigenvec
   xlab('Iterations')+
   theme_classic()+
   ylab('Angles w.r.t reference')+
-  facet_grid_sc(rows=vars(SNPs), cols = vars(eigenvector), scales = list(x = scales_x))+
+  facet_grid_sc(rows=vars(sites), cols = vars(eigenvector), scales = list(x = scales_x))+
   scale_x_continuous('Algorithm',breaks=breaks_fun, limits = c(0, NA))+
   theme(legend.position = 'bottom',
         strip.text = element_text(size=8), panel.border = element_rect(fill=NA), 
         panel.spacing = unit(0.05, 'cm'),strip.background = element_blank(), 
         strip.text.y = element_blank())+ # remove sites strip label
   scale_color_viridis_d(option = 'A', end=0.7)+extra_theme
-conv
 
 
 
@@ -134,21 +151,12 @@ gt <- gtable_add_grob(gt, text.grob,
                       t = min(strip$t), l = max(strip$r) + 1, b = max(strip$b))
 # Draw it
 conv<-ggplotify::as.ggplot(gt)
+```
+
+```{r show=TRUE}
 conv
-
-ggsave(conv,file='/home/anne/Documents/manuscripts/vertical-pattern-recognition/figures/convergence.pdf', height=6, units = 'cm', width = 15 )
-
-
-
-
-extra_theme <-theme(axis.text.y = element_text( size=8),
-                    axis.title = element_text(size=9),
-                    plot.margin = unit(c(0.2, 0.2, 0.2, 0.2), "cm"),
-                    legend.margin = margin(t = -12, r = 0, b = 0, l = 0),
-                    axis.text.x = element_text(angle = 90 , size = 8, hjust = 1, vjust = 0.5, margin = margin(t = 1, r = 0, b = -12, l = 0)))
-
-
-
+```
+```{r}
 eog<- fread('~/Documents/featurecloud/singular-value-decomposition/results/mnist/matrix/summary.eo.tsv')
 eo<-fread('/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist/vector/summary.eo.tsv')
 eo<-rbind(eo, eog, use.names=F)
@@ -162,8 +170,6 @@ pl.eo<-ggplot(eo, aes(V4, sum, fill=interaction(V4,V3), color=V4))+geom_boxplot(
   scale_color_viridis_d(option = 'A', end=0.7)+
   scale_fill_manual(values=c(viridisLite::magma(5, end=0.7, alpha = 0.6), viridisLite::magma(5, end=0.7, alpha = 0.8)))
   
-  
-pl.eo
 
 
 iterations<-as.data.table(iterations)
@@ -178,9 +184,6 @@ pl.iter<-ggplot(iterations, aes(Algorithm, maxit, fill=interaction(Algorithm, si
   guides(fill="none", color="none")+
   scale_color_viridis_d(option = 'A', end=0.7)+
   scale_fill_manual(values=c(viridisLite::magma(5, end=0.7, alpha = 0.6), viridisLite::magma(5, end=0.7, alpha = 0.8)))
-pl.iter
-
-
 
 
 transmission<-fread('~/Documents/featurecloud/singular-value-decomposition/results/mnist/matrix/summary.transmission.tsv')
@@ -201,7 +204,7 @@ pl.volume<-ggplot(volume, aes(algorithm, total_volume, fill=interaction(algorith
   extra_theme+
   guides(fill=FALSE, color=F)+scale_color_viridis_d(option = 'A', end=0.7)+
   scale_fill_manual(values=c(viridisLite::magma(5, end=0.7, alpha = 0.6), viridisLite::magma(5, end=0.7, alpha = 0.8)))
-pl.volume
+
 ############FAKE ALPHA LEGEND
 pl.volume.legend<-ggplot(volume, aes(algorithm, total_volume, fill=algorithm, alpha=as.factor(sites)))+geom_boxplot()+
   theme_classic()+ylab('Total transmitted data [GB]')+xlab('')+
@@ -210,8 +213,6 @@ pl.volume.legend<-ggplot(volume, aes(algorithm, total_volume, fill=algorithm, al
   #guides(fill=F,alpha=guide_legend('#Sites', override.aes=list(fill=hcl(c(15,195),100,0,alpha=c(0.2,0.7)))))
   guides(fill=F,alpha=guide_legend('#Sites', override.aes=list(fill=hcl(c(15),100,0,alpha=c(0.2)))))
   
-pl.volume.legend
-
 
 legend_b <- get_legend(
   pl.volume.legend +theme(legend.position = 'bottom',
@@ -226,7 +227,218 @@ text.grob = textGrob(text, rot = -90,
 gp<-ggarrange(pl.iter, pl.eo, pl.volume, ncol=3)
 gp<-plot_grid(gp, text.grob, rel_widths = c(1,0.05))
 gp<-plot_grid(gp, legend_b, ncol=1, rel_heights = c(1,0.1))
+```
+
+
+```{r}
 # Convert the plot to a grob
 gp
-ggsave(gp,file='/home/anne/Documents/manuscripts/vertical-pattern-recognition/figures/benchmark.pdf', height=6, units = 'cm', width = 15)
+```
+
+## 1000 Genomes
+
+```{r, echo=False}
+# manually fix the scales for the convergence plots
+scales_x <- list(
+  `Eigenvector 1` = scale_x_continuous(limits = c(0, 10)),
+  `Eigenvector 5` = scale_x_continuous(limits = c(0, 200)),
+  `Eigenvector 10` =scale_x_continuous(limits = c(0, 750))
+  
+)
+
+#manually set the breaks for the convergence plots
+breaks_fun <- function(x) {
+  if (max(x)>1000){
+    seq(500, max(x), 500)
+  }
+  else if (max(x) > 500) {
+    seq(250, max(x), 250)
+  } else if (max(x)> 250) {
+    seq(100, max(x), 150)
+  }
+  else{
+    seq(50, max(x), 100)
+  }
+}
+# make a nice minimal theme
+extra_theme <-theme(axis.text.y = element_text( size=8),
+                    axis.title = element_text(size=9),
+                    plot.margin = unit(c(0.2, 0.2, 0.2, 0.2), "cm"),
+                    legend.margin = margin(t = -12, r = 0, b = 0, l = 0),
+                    axis.text.x = element_text(angle = 90 , size = 8, hjust = 1, vjust = 0.5, margin = margin(t = 1, r = 0, b = 0, l = 0)))
+
+```
+
+```{R, message=FALSE, echo=FALSE}
+chr <- '1'
+ob<-combine_data(paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/1000g/chr',chr,'.100000/vertical/'))
+data<-ob[[2]]
+iterations<-ob[[1]]
+data$SNPs<-'100000'
+iterations$SNPs<-'100000'
+
+ob1<-combine_data(paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/1000g/chr',chr,'.500000/vertical/'))
+data1<-ob[[2]]
+data1$SNPs<-'500000'
+iterations1<-ob1[[1]]
+iterations1$SNPs<-'500000'
+
+ob2<-combine_data(paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/1000g/chr',chr,'.all/vertical/'))
+data2<-ob[[2]]
+data2$SNPs<-'>1Mio'
+iterations2<-ob2[[1]]
+iterations2$SNPs<-'>1Mio'
+
+data<-rbind(data,data1,data2)
+iterations<-rbind(iterations, iterations1, iterations2)
+iterations$SNPs<-as.factor(iterations$SNPs)
+```
+
+
+```{R, message=FALSE, echo=FALSE}
+# plot the convergence lines.
+conv<-ggplot(data[eigenvector %in% c('Eigenvector 1', 'Eigenvector 5', 'Eigenvector 10')], 
+             aes(iteration, mean_angle, group=interaction(Algorithm, Algorithm), color=Algorithm))+
+  geom_line(aes(linetype=Algorithm))+
+  xlab('Iterations')+
+  theme_classic()+
+  ylab('Angles w.r.t reference')+
+  facet_grid_sc(rows=vars(SNPs), cols = vars(eigenvector), scales = list(x = scales_x))+
+  scale_x_continuous('Algorithm',breaks=breaks_fun, limits = c(0, NA))+
+  theme(legend.position = 'bottom',
+        strip.text = element_text(size=8), panel.border = element_rect(fill=NA), 
+        panel.spacing = unit(0.05, 'cm'),strip.background = element_blank())+ # remove sites strip label
+  scale_color_viridis_d(option = 'A', end=0.7)+extra_theme
+
+#Make side panel
+# Convert the plot to a grob
+text = paste0('Chromosome ', chr)
+size=10
+gt <- ggplotGrob(conv)
+# Get the positions of the right strips in the layout: t = top, l = left, ...
+strip <-c(subset(gt$layout, grepl("strip-r", gt$layout$name), select = t:r))
+# Text grob
+text.grob = textGrob(text, rot = -90,
+                     gp = gpar(fontsize = size))
+# New olumn to the right of current strip
+# Adjusts its width to text size
+width = unit(2, "grobwidth", text.grob) + unit(1, "lines")
+gt <- gtable_add_cols(gt, width, max(strip$r))  
+# Add text grob to new column
+gt <- gtable_add_grob(gt, text.grob, 
+                      t = min(strip$t), l = max(strip$r) + 1, b = max(strip$b))
+# Draw it
+conv<-ggplotify::as.ggplot(gt)
+```
+
+```{r}
+conv
+```
+
+```{r}
+eol<-list()
+
+for (sub in c(paste0('chr',chr,'.100000'), paste0('chr',chr,'.500000'), paste0('chr',chr,'.all'))){
+  eog<- fread(paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/1000g/',sub,'/vertical/matrix/summary.eo.tsv'))
+  eo<-fread(paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/1000g/',sub,'/vertical/vector/summary.eo.tsv'))
+  eo<-rbind(eo, eog, use.names=F)
+  eo$SNPs<-as.factor(strsplit(sub, '\\.')[[1]][[2]])
+  
+  eo$V4<-recode(eo$V4, 'power-approx'='AI-FULL', 'power-iteration'='RI-FULL', 'randomized'='RAND', 'gradient'='GUO')
+  eo<- eo[V4 %in% c('AI-FULL', 'RI-FULL', 'RAND', 'GUO') ]
+  eo <- eo %>% group_by(V3,V4,V5, SNPs) %>% summarise(sum=sum(V2))
+  eol[[strsplit(sub, '\\.')[[1]][[2]]]]<-eo
+}
+eo<-rbindlist(eol)
+
+
+pl.eo<-ggplot(eo, aes(V4, sum, fill=interaction(V4,SNPs), color=V4))+geom_boxplot()+ylab('Runtime[s] (Matrix oper.)')+xlab('')+
+  theme_classic()+
+  extra_theme+
+  guides(fill=FALSE, color=F)+
+  scale_color_viridis_d(option = 'A',4, end=0.7, begin=0.2, alpha = 1)+
+  scale_fill_manual(values=c(viridisLite::magma(4, end=0.7, begin=0.2, alpha = 0.2), viridisLite::magma(4, end=0.7, begin=0.6, alpha = 0.4), viridisLite::magma(4,end=0.7, begin=0.2, alpha = 0.8)))
+  
+pl.eo
+```
+
+
+```{r}
+iterations<-as.data.table(iterations)
+iterations$Algorithm<-recode(iterations$Algorithm, 'power-approx'='AI-FULL', 'power-iteration'='RI-FULL', 'randomized'='RAND', 'gradient'='GUO')
+iterations <- iterations[Algorithm %in% c('AI-FULL', 'RI-FULL', 'RAND', 'GUO') ]
+pl.iter<-ggplot(iterations, aes(Algorithm, maxit, fill=interaction(Algorithm, SNPs),color=Algorithm))+
+  geom_boxplot()+
+  xlab('')+
+  theme_classic()+
+  ylab('Iterations to convergence')+
+  extra_theme +
+  guides(fill="none", color="none")+
+ scale_color_viridis_d(option = 'A',4, end=0.7, begin=0.2, alpha = 1)+
+  scale_fill_manual(values=c(viridisLite::magma(4, end=0.7, begin=0.2, alpha = 0.2), viridisLite::magma(4, end=0.7, begin=0.6, alpha = 0.4), viridisLite::magma(4,end=0.7, begin=0.2, alpha = 0.8)))
+```
+
+
+```{r}
+tol<-list()
+for (sub in c(paste0('chr',chr,'.100000'), paste0('chr',chr,'.500000'), paste0('chr',chr,'.all'))){
+  transmission<-fread(paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/1000g/',sub,'/vertical/matrix/summary.transmission.tsv'))
+transmission_guo<-fread(paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/1000g/',sub,'/vertical/vector/summary.transmission.tsv'))
+transmission<-rbind(transmission_guo, transmission)
+transmission<-transmission[V2 %in% c("H_local=CS", "H_global=SC")]
+colnames(transmission) <- c('index', 'key', 'iteration', 'site', 'size', 'kA', 'sites', 'algorithm', 'filename')
+transmission<-transmission[site==1]
+transmission$SNPs<-strsplit(sub, '\\.')[[1]][[2]]
+tol[[strsplit(sub, '\\.')[[1]][[2]]]]<-transmission
+}
+transmission<-rbindlist(tol)
+
+volume<-transmission %>% select(size, SNPs, algorithm, filename)%>% group_by(SNPs, algorithm, filename)%>% summarise(total_volume=(sum(size)*4)/1000000000)
+
+volume<-as.data.table(volume)
+volume$algorithm<-recode(volume$algorithm, 'power-approx'='AI-FULL', 'power-iteration'='RI-FULL', 'randomized'='RAND', 'gradient'='GUO')
+volume<- volume[algorithm %in% c( 'RI-FULL', 'AI-FULL', 'RAND', 'GUO')]
+pl.volume<-ggplot(volume, aes(algorithm, total_volume, fill=interaction(algorithm, SNPs),color=algorithm))+geom_boxplot()+
+  ylab('Total transmitted\n data [GB]')+
+  xlab('')+
+  theme_classic()+
+  extra_theme+
+  guides(fill=FALSE, color=F)+
+  scale_color_viridis_d(option = 'A',4, end=0.7, begin=0.2, alpha = 1)+
+  scale_fill_manual(values=c(viridisLite::magma(4, end=0.7, begin=0.2, alpha = 0.2), viridisLite::magma(4, end=0.7, begin=0.6, alpha = 0.4), viridisLite::magma(4,end=0.7, begin=0.2, alpha = 0.8)))
+pl.volume
+```
+
+
+```{r}
+############FAKE ALPHA LEGEND
+pl.volume.legend<-ggplot(iterations, aes(Algorithm, maxit, fill=Algorithm, alpha=as.factor(SNPs)))+geom_boxplot()+
+  theme_classic()+ylab('Total transmitted data [GB]')+xlab('')+
+  scale_alpha_manual(values=c(0.2,0.4, 0.7))+
+  # Use this to create a legens for splits category
+  #guides(fill=F,alpha=guide_legend('#Sites', override.aes=list(fill=hcl(c(15,195),100,0,alpha=c(0.2,0.7)))))
+  guides(fill=F,alpha=guide_legend('#SNPs', override.aes=list(fill=hcl(c(15),100,0,alpha=c(0.2)))))
+  
+
+legend_b <- get_legend(
+  pl.volume.legend +theme(legend.position = 'bottom',
+                          legend.box.margin = margin(t = 0, r = 0, b = 0, l = 0),
+                          legend.text = element_text(size = 8),
+                          legend.title = element_text(size = 8))
+)
+text = paste0('Chromosome ', chr)
+size=10
+text.grob = textGrob(text, rot = -90,
+                     gp = gpar(fontsize = size))
+gp<-ggarrange(pl.iter, pl.eo, pl.volume, ncol=3)
+gp<-plot_grid(gp, text.grob, rel_widths = c(1,0.05))
+gp<-plot_grid(gp, legend_b, ncol=1, rel_heights = c(1,0.1))
+```
+
+
+```{r}
+# Convert the plot to a grob
+gp
+ggsave(file=paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/plots/chromosome_',chr,'.pdf'), width = 18, units = 'cm', height = 6.5)
+```
 

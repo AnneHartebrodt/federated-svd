@@ -94,7 +94,14 @@ def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsi
             os.makedirs(outdir_gradient, exist_ok=True)
             filename = create_filename(outdir_gradient, dataset_name + '_' + mode, s, c, k, maxit, start)
 
+
             g_init, h_init = approximate_vertical(data_list, k=k, factor_k=2)
+            G_i = np.concatenate(g_init, axis=0)
+            aol = AccuracyLogger()
+            aol.open(filename)
+            aol.log_current_accuracy(u=u, G_i=G_i, eigenvals=None, conv=None, current_iteration= 1,
+                                     choices=choice, precomputed_pca=precomputed_pca, v=v, H_i=h_init)
+            aol.close()
             simulate_subspace_iteration(data_list, k, maxit=maxit, u=u, filename=filename, choices=choice,
                                         precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
                                         epsilon=epsilon, g_ortho_freq=ortho_freq, g_init=g_init)
@@ -154,10 +161,10 @@ if __name__ == '__main__':
         #
         dataset_name = 'mnist'
         maxit = 500
-        nr_repeats = 1
+        nr_repeats = 10
         k = 10
-        splits = [5]
-        outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results'
+        splits = [5, 10]
+        outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist'
         the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsilon=1e-9,
                                            unequal=False, precomputed_pca=None, ortho_freq=1000)
         print('TIME: '+ str(time.monotonic() - start))
