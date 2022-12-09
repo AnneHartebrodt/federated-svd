@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 from svd.algorithms.randomized import *
@@ -305,6 +307,8 @@ if __name__ == '__main__':
             data = sps.csc_matrix((data.iloc[:, 3], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
 
             if scale or center:
+                now= str(time.monotonic())
+                print('Start scaling'+ str(now))
                 means = data.mean(axis=0)
                 std = np.std(data, axis=0)
                 if center:
@@ -318,6 +322,7 @@ if __name__ == '__main__':
                 if center:
                     # impute. After centering, the mean should be 0, so this effectively mean imputation
                     data = np.nan_to_num(data, nan=0, posinf=0, neginf=0)
+                print('Finish scaling: Duration '+ str(time.monotonic()-now))
 
 
         elif filetype == 'gwas':
