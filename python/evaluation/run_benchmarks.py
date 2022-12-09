@@ -287,8 +287,8 @@ if __name__ == '__main__':
             data = data.T
 
         elif filetype == 'sparse':
-            data = pd.read_csv(path, header=args.header, sep=sep, rownames=args.rownames)
-            data = sps.csc_matrix((data.iloc[:, 3], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
+            data = pd.read_csv(path, header=args.header, sep=sep, index_col=args.rownames)
+            data = sps.csc_matrix((data.iloc[:, 2], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
             if scale or center:
                 data = data.todense()
                 data = si.scale_center_data_columnwise(data, center=center, scale_variance=scale)
