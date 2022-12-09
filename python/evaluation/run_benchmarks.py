@@ -11,6 +11,7 @@ import data_import.gwas_import as gi
 from svd.logging import *
 
 from evaluation.data_aggregation import *
+import scipy.sparse as sps
 
 
 ####### BENCHMARK RUNNER #######
@@ -94,14 +95,16 @@ def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsi
             os.makedirs(outdir_gradient, exist_ok=True)
             filename = create_filename(outdir_gradient, dataset_name + '_' + mode, s, c, k, maxit, start)
 
-
+            print('Approximtate-init')
             g_init, h_init = approximate_vertical(data_list, k=k, factor_k=2)
             G_i = np.concatenate(g_init, axis=0)
+            G_i = np.asarray(G_i)
             aol = AccuracyLogger()
             aol.open(filename)
             aol.log_current_accuracy(u=u, G_i=G_i, eigenvals=None, conv=None, current_iteration= 1,
                                      choices=choice, precomputed_pca=precomputed_pca, v=v, H_i=h_init)
             aol.close()
+            print('Approximate-subspace')
             simulate_subspace_iteration(data_list, k, maxit=maxit, u=u, filename=filename, choices=choice,
                                         precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
                                         epsilon=epsilon, g_ortho_freq=ortho_freq, g_init=g_init)
@@ -131,6 +134,7 @@ def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsi
             # simulate randomized
             start = time.monotonic()
             mode = 'randomized'
+            print('randomized')
             outdir_approx = op.join(outdir, 'matrix', str(s), mode)
             os.makedirs(outdir_approx, exist_ok=True)
             filename = create_filename(outdir_approx, dataset_name + '_' + mode, s, c, k, maxit, start)
@@ -155,16 +159,30 @@ if __name__ == '__main__':
     np.random.seed(11)
     if local:
         start = time.monotonic()
-        data, test_lables = mi.load_mnist('/home/anne/Documents/featurecloud/pca/vertical-pca/data/mnist/raw', 'train')
+        #data, sample_ids, variable_names = si.data_import('/home/anne/Documents/featurecloud/singular-value-decomposition/data/tabular/movielens.tsv', header=None, rownames=None, sep='\t')
+        #data, test_lables = mi.load_mnist('/home/anne/Documents/featurecloud/pca/vertical-pca/data/mnist/raw', 'train')
         # data, test_labels = mi.load_mnist(input_dir, 'train')
-        data = coo_matrix.asfptype(data)
+        #data = coo_matrix.asfptype(data)
         #
-        dataset_name = 'mnist'
+        #dataset_name = 'mnist'
+        data = pd.read_csv('/home/anne/Downloads/ml-100k/u.data', header=None, sep='\t')
+        data = sps.csc_matrix((data.iloc[:, 3], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
+        print(data.shape)
+        #data = data.todense()
+        print(data.shape)
+        #ata, var = si.drop0Columns(data, None, drop=False, noise=True)
+        #data = si.scale_center_data_columnwise(data, center=True, scale_variance=True)
+        #nr_samples = data.shape[0]
+        #nr_features = data.shape[1]
+
+        dataset_name = 'movielens'
         maxit = 500
-        nr_repeats = 10
+        nr_repeats = 3
         k = 10
         splits = [5, 10]
-        outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist'
+        #outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist'
+
+        outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/movielens'
         the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsilon=1e-9,
                                            unequal=False, precomputed_pca=None, ortho_freq=1000)
         print('TIME: '+ str(time.monotonic() - start))
@@ -252,7 +270,6 @@ if __name__ == '__main__':
             data = data_list
 
 
-
         elif filetype == 'delim':
             data, sample_ids, variable_names = si.data_import(path, sep=sep, header=args.header, rownames=args.rownames)
             if scale or center:
@@ -268,6 +285,16 @@ if __name__ == '__main__':
                 nr_samples = data.shape[0]
                 nr_features = data.shape[1]
             data = data.T
+
+        elif filetype == 'sparse':
+            data = pd.read_csv(path, header=args.header, sep=sep, rownames=args.rownames)
+            data = sps.csc_matrix((data.iloc[:, 3], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
+            if scale or center:
+                data = data.todense()
+                data = si.scale_center_data_columnwise(data, center=center, scale_variance=scale)
+                nr_samples = data.shape[0]
+                nr_features = data.shape[1]
+
 
         elif filetype == 'gwas':
             bim = path + '.bim'

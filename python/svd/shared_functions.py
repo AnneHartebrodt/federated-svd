@@ -28,7 +28,7 @@ def compute_cov(original):
     # n = number of samples
     n = original.shape[0]
     # np.dot is matrix product for 2 dimensional arrays
-    cov = (1 / (n - 1)) * np.dot(original.transpose(), original)
+    cov = (1 / (n - 1)) * original.transpose().dot(original)
     return cov
 
 
@@ -71,7 +71,7 @@ def extract_eigenvals(eigenvalues):
 
 
 def projection(scaled, sim, ndims):
-    projection = sc.dot(scaled, sim[:, 0:ndims])
+    projection = scaled.dot(sim[:, 0:ndims])
     return projection
 
 
@@ -232,7 +232,7 @@ def eigenvector_convergence_checker(current, previous, tolerance=1e-9, required=
     while col < current.shape[1] and not converged:
         # check if the scalar product of the current and the previous eigenvectors
         # is 1, which means the vectors are 'parallel'
-        delta = np.abs(np.sum(np.dot(np.transpose(current[:, col]), previous[:, col])))
+        delta = np.abs(np.sum(np.transpose(current[:, col]).dot(previous[:, col])))
         deltas.append(delta)
         if delta >= 1 - tolerance:
             nr_converged = nr_converged + 1
@@ -266,8 +266,8 @@ def convergence_checker_rayleigh(current, previous, alpha_current, alpha_prev, e
     if required is None:
         required = current.shape[1]
     while col < current.shape[1] and not converged:
-        ra = np.dot(current[:,col].T, current[:,col])/ alpha_current[col]
-        rap = np.dot(previous[:,col].T, previous[:,col])/ alpha_prev[col]
+        ra = current[:,col].T.dot(current[:,col])/ alpha_current[col]
+        rap = previous[:,col].T.dot(previous[:,col])/ alpha_prev[col]
         deltas.append(np.abs(ra-rap))
         if np.abs(ra-rap) < epsilon:
             nr_converged = nr_converged+1

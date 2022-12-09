@@ -98,7 +98,7 @@ def simulate_subspace_iteration(local_data, k, maxit, filename=None, u=None, cho
         for i in range(len(local_data)):
             # send local H matrices to server
             mot.start()
-            H_local = np.dot(local_data[i], G_list[i])
+            H_local = local_data[i].dot( G_list[i])
             mot.stop()
             tol.log_transmission("H_local=CS", iterations, i, H_local)
             # add up H matrices at server and send them back to the clients
@@ -117,12 +117,12 @@ def simulate_subspace_iteration(local_data, k, maxit, filename=None, u=None, cho
             # Use gradient based update of the Eigenvectors
 
             if gradient:
-                G_list[i] = np.dot(local_data[i].T, H_i) + G_list[i]
+                G_list[i] = local_data[i].T.dot( H_i) + G_list[i]
             else:
 
                 # Use power iterations based update of the eigenvalue scheme
                 mot.start()
-                G_list[i] = np.dot(local_data[i].T, H_i)
+                G_list[i]  = local_data[i].T.dot(H_i)
                 mot.stop()
                 if not federated_qr:
                     tol.log_transmission("Gi_local=CS", iterations, i, G_list[i])

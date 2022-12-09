@@ -54,7 +54,7 @@ def simulate_federated_qr(local_data):
     rl = [np.zeros((local_data[0].shape[1], local_data[0].shape[1])) for d in local_data]
     # Compute first squared eigenvector norm
     for d in range(len(local_data)):
-        se = np.dot(local_data[d][:, 0], local_data[d][:,0])
+        se = local_data[d][:, 0].T.dot(local_data[d][:,0])
         sum = sum+se
         aplist.append(local_data[d][:,0])
     ortho.append(aplist)
@@ -70,8 +70,8 @@ def simulate_federated_qr(local_data):
         for j in range(i):
             for d in range(len(local_data)):
                 ind = i-1
-                r[j, ind] = r[j, ind] + np.dot(local_data[d][:, ind], glist[j][d])
-                rl[d][j, ind] = np.dot(local_data[d][:, ind], glist[j][d])
+                r[j, ind] = r[j, ind] + local_data[d][:, ind].T.dot(glist[j][d])
+                rl[d][j, ind] = local_data[d][:, ind].T.dot(glist[j][d])
         # conorms we want to calculate
         sums = []
         aplist = []
@@ -93,7 +93,7 @@ def simulate_federated_qr(local_data):
                 d = local_data[ik]
                 o1 = o[ik]
                 # Compute conorm
-                se = np.dot(o1, d[:, i]) / n
+                se = o1.T.dot(d[:, i]) / n
                 sum = sum + se
             sums.append(sum)
 
@@ -104,11 +104,11 @@ def simulate_federated_qr(local_data):
             ap = local_data[d][:, i]
             for j in range(len(sums)):
                 # reorthonogonalise
-                ap = ap - sums[j] * ortho[j][d]
+                ap = ap - ortho[j][d].dot(sums[j])
 
             # compute the local norm of the freshly orthogonalised
             # eigenvector snippet
-            se = np.dot(ap, ap)
+            se = ap.T.dot(ap)
             norm = norm + se
             aplist.append(ap)
         norms.append(norm+1e-15)
@@ -119,8 +119,8 @@ def simulate_federated_qr(local_data):
     glist.append([a /  np.sqrt(norms[i-1]) for a in aplist])
     for d in range(len(local_data)):
         for j in range(i):
-            r[j, ind] = r[j, ind] + np.dot(local_data[d][:, ind], glist[j][d])
-            rl[d][j, ind] = np.dot(local_data[d][:, ind], glist[j][d])
+            r[j, ind] = r[j, ind] + local_data[d][:, ind].T.dot(glist[j][d])
+            rl[d][j, ind] = local_data[d][:, ind].T.dot(glist[j][d])
     G_list = []
 
     # normalise the vector norms to unit norm.
@@ -128,8 +128,16 @@ def simulate_federated_qr(local_data):
         oo = []
         for i in range(len(ortho)):
             # norms are still squared
-            oo.append(ortho[i][d] / np.sqrt(norms[i]))
+            temp = ortho[i][d] / np.sqrt(norms[i])
+            temp = np.asarray(temp)
+            temp = np.squeeze(temp)
+            print(temp.shape)
+            print(isinstance(temp, np.ndarray))
+            print(isinstance(temp, np.matrix))
+
+            oo.append(temp)
         oo = np.stack(oo, axis = 1)
+        #print(oo.shape)
         G_list.append(oo)
 
     # just for convenience stack the data
@@ -141,7 +149,7 @@ def computeR(data_list, q_list):
     for a in range(data_list[0].shape[1]):
         for e in range(q_list[0].shape[1]):
             for d,g in zip(data_list, q_list):
-                r[e,a] = r[e,a] + np.dot(d[:, a], g[:,e])
+                r[e,a] = r[e,a] + d[:, a].dot(g[:,e])
     return r
 
 
