@@ -19,7 +19,7 @@ import scipy.sparse as sps
 
 ####### BENCHMARK RUNNER #######
 def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsilon=1e-9, precomputed_pca=None,
-                  unequal=False, guo_epsilon=1e-11, ortho_freq=1):
+                  unequal=False, guo_epsilon=1e-11, ortho_freq=1, algorithms = ['RANDOMIZED', 'GUO', 'AI-FULL', 'RI-FULL']):
     """
     run the simulation of a federated run of vertical power iteration
     Args:
@@ -72,82 +72,84 @@ def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsi
 
             start = time.monotonic()
 
+            if 'RI-FULL' in algorithms:
+                # simultaneous only H
+                grad = False
+                fedqr = False
+                mode = 'power-iteration'
+                print('power - matrix - ' + mode)
+                outdir_gradient = op.join(outdir, 'matrix', str(s), mode)
+                os.makedirs(outdir_gradient, exist_ok=True)
+                print(outdir_gradient)
+                filename = create_filename(outdir_gradient, dataset_name + '_' + mode, s, c, k, maxit, start)
+                print(filename)
+                simulate_subspace_iteration(data_list, k, maxit=maxit, u=u, filename=filename, choices=choice,
+                                            precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
+                                            epsilon=epsilon, g_ortho_freq=ortho_freq)
+                end = time.monotonic()
+                log_time(logftime, 'qr_scheme' + '_' + mode, end - start, s, c)
 
-            # simultaneous only H
-            grad = False
-            fedqr = False
-            mode = 'power-iteration'
-            print('power - matrix - ' + mode)
-            outdir_gradient = op.join(outdir, 'matrix', str(s), mode)
-            os.makedirs(outdir_gradient, exist_ok=True)
-            print(outdir_gradient)
-            filename = create_filename(outdir_gradient, dataset_name + '_' + mode, s, c, k, maxit, start)
-            print(filename)
-            simulate_subspace_iteration(data_list, k, maxit=maxit, u=u, filename=filename, choices=choice,
-                                        precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
-                                        epsilon=epsilon, g_ortho_freq=ortho_freq)
-            end = time.monotonic()
-            log_time(logftime, 'qr_scheme' + '_' + mode, end - start, s, c)
+            if 'AI-FULL' in algorithms:
+                # simultaneous only H with approx
+                grad = False
+                mode = 'power-approx'
+                print('power - matrix - ' + mode)
+                outdir_gradient = op.join(outdir, 'matrix', str(s), mode)
+                os.makedirs(outdir_gradient, exist_ok=True)
+                filename = create_filename(outdir_gradient, dataset_name + '_' + mode, s, c, k, maxit, start)
 
-
-            # simultaneous only H with approx
-            grad = False
-            mode = 'power-approx'
-            print('power - matrix - ' + mode)
-            outdir_gradient = op.join(outdir, 'matrix', str(s), mode)
-            os.makedirs(outdir_gradient, exist_ok=True)
-            filename = create_filename(outdir_gradient, dataset_name + '_' + mode, s, c, k, maxit, start)
-
-            print('Approximtate-init')
-            g_init, h_init = approximate_vertical(data_list, k=k, factor_k=2)
-            G_i = np.concatenate(g_init, axis=0)
-            G_i = np.asarray(G_i)
-            aol = AccuracyLogger()
-            aol.open(filename)
-            aol.log_current_accuracy(u=u, G_i=G_i, eigenvals=None, conv=None, current_iteration= 1,
-                                     choices=choice, precomputed_pca=precomputed_pca, v=v, H_i=h_init)
-            aol.close()
-            print('Approximate-subspace')
-            simulate_subspace_iteration(data_list, k, maxit=maxit, u=u, filename=filename, choices=choice,
-                                        precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
-                                        epsilon=epsilon, g_ortho_freq=ortho_freq, g_init=g_init)
-            end = time.monotonic()
-            log_time(logftime, 'qr_scheme' + '_' + mode, end - start, s, c)
+                print('Approximtate-init')
+                g_init, h_init = approximate_vertical(data_list, k=k, factor_k=2)
+                G_i = np.concatenate(g_init, axis=0)
+                G_i = np.asarray(G_i)
+                aol = AccuracyLogger()
+                aol.open(filename)
+                aol.log_current_accuracy(u=u, G_i=G_i, eigenvals=None, conv=None, current_iteration= 1,
+                                         choices=choice, precomputed_pca=precomputed_pca, v=v, H_i=h_init)
+                aol.close()
+                print('Approximate-subspace')
+                simulate_subspace_iteration(data_list, k, maxit=maxit, u=u, filename=filename, choices=choice,
+                                            precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
+                                            epsilon=epsilon, g_ortho_freq=ortho_freq, g_init=g_init)
+                end = time.monotonic()
+                log_time(logftime, 'qr_scheme' + '_' + mode, end - start, s, c)
 
             # Run Guo version
-            # Sequential
-            grad = True
-            fedqr = False
-            grad_name = 'gradient'
-            mode = 'gradient'
-            print('gradient - sequential - '+ mode)
-            outdir_gradient = op.join(outdir, 'vector', str(s), mode)
-            os.makedirs(outdir_gradient, exist_ok=True)
+            if 'GUO' in algorithms:
+                # Sequential
+                grad = True
+                fedqr = False
+                grad_name = 'gradient'
+                mode = 'gradient'
+                print('gradient - sequential - '+ mode)
+                outdir_gradient = op.join(outdir, 'vector', str(s), mode)
+                os.makedirs(outdir_gradient, exist_ok=True)
 
-            filename = create_filename(outdir_gradient, dataset_name_guo + '_' + mode, s, c, k, maxit, start)
+                filename = create_filename(outdir_gradient, dataset_name_guo + '_' + mode, s, c, k, maxit, start)
 
-            start = time.monotonic()
-            compute_k_eigenvectors(data_list, k=k, maxit=maxit, u=u, filename=filename, choices=choice,
-                                   precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
-                                   epsilon=epsilon, guo_epsilon=guo_epsilon)
-            end = time.monotonic()
-            log_time(logftime, 'guo_single' + '_' + mode, end - start, s, c)
+                start = time.monotonic()
+                compute_k_eigenvectors(data_list, k=k, maxit=maxit, u=u, filename=filename, choices=choice,
+                                       precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
+                                       epsilon=epsilon, guo_epsilon=guo_epsilon)
+                end = time.monotonic()
+                log_time(logftime, 'guo_single' + '_' + mode, end - start, s, c)
 
-            grad=False
-            # simulate randomized
-            start = time.monotonic()
-            mode = 'randomized'
-            print('randomized')
-            outdir_approx = op.join(outdir, 'matrix', str(s), mode)
-            os.makedirs(outdir_approx, exist_ok=True)
-            filename = create_filename(outdir_approx, dataset_name + '_' + mode, s, c, k, maxit, start)
+            if 'RANDOMIZED' in algorithms:
+                grad=False
+                # simulate randomized
+                start = time.monotonic()
+                mode = 'randomized'
+                print('randomized')
+                outdir_approx = op.join(outdir, 'matrix', str(s), mode)
+                os.makedirs(outdir_approx, exist_ok=True)
+                filename = create_filename(outdir_approx, dataset_name + '_' + mode, s, c, k, maxit, start)
 
-            run_randomized(data_list, k, I=10, u=u, filename=filename, choices=choice,
-                           precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
-                           epsilon=epsilon, g_ortho_freq=ortho_freq, g_init=None)
-            end = time.monotonic()
-            log_time(logftime, mode, end - start, s, c)
-            print(mode + ' ' + str(end - start))
+                run_randomized(data_list, k, I=10, u=u, filename=filename, choices=choice,
+                               precomputed_pca=precomputed_pca, federated_qr=fedqr, v=v, gradient=grad,
+                               epsilon=epsilon, g_ortho_freq=ortho_freq, g_init=None)
+                end = time.monotonic()
+                log_time(logftime, mode, end - start, s, c)
+                print(mode + ' ' + str(end - start))
 
             logf = op.join(outdir, 'log_choices.log')
             log_choices(logf, filename, choice)
@@ -197,10 +199,13 @@ if __name__ == '__main__':
         k = 10
         splits = [5, 10]
         #outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist'
+        algorithms = 'RANDOMIZED,GUO,AI-FULL,RI-FULL'
+        algorithms = algorithms.strip().split(',')
+        print(algorithms)
 
         outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/movielens'
         the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsilon=1e-9,
-                                           unequal=False, precomputed_pca=None, ortho_freq=1000)
+                                           unequal=False, precomputed_pca=None, ortho_freq=1000, algorithms=algorithms)
         print('TIME: '+ str(time.monotonic() - start))
         outd = ['matrix', 'vector']
         for od in outd:
@@ -235,6 +240,7 @@ if __name__ == '__main__':
         parser.add_argument('--scaled', action='store_true', help='data is prescaled')
         parser.add_argument('--unequal', default=None, type=str, help='split unequal, load split file')
         parser.add_argument('--ortho_freq',type=int, default=1, help='orthonormalisatio frequency for G')
+        parser.add_argument('--algorithms', type=str, default='RANDOMIZED,GUO,AI-FULL,RI-FULL')
         args = parser.parse_args()
 
         np.random.seed(95)
@@ -262,6 +268,9 @@ if __name__ == '__main__':
                 l = split_data.iloc[i, :].tolist()
                 cleanedList = [x for x in l if not np.isnan(x)]
                 splits.append(cleanedList)
+
+        algorithms = args.algorithms.strip().split(',')
+        print(algorithms)
 
         maxit = args.i
         nr_repeats = args.r
