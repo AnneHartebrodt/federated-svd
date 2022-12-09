@@ -261,7 +261,7 @@ def compute_GRM(infile, grmfile):
     # genetic relation ship matrix
     # data is scaled already, therefore we compute patient-patient cov matrix
     # divided by the number of SNPs
-    grm = np.dot(data.T, data) / data.shape[0]
+    grm = data.T.dot(data) / data.shape[0]
     pd.DataFrame(grm).to_csv(grmfile, sep='\t', header=None, index=None)
     return grm
 

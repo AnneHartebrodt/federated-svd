@@ -17,7 +17,7 @@ def residuals(V, a=None, sums=None):
             sum = sum + sums[v] * V[:, v].T
     else:
         for v in range(V.shape[1]):
-            sum = sum + np.dot(a, V[:, v:v + 1]) * V[:, v].T
+            sum = sum + a.dot(V[:, v:v + 1]) * V[:, v].T
     ap = a - sum
     return ap
 
@@ -88,16 +88,16 @@ def simulate_guo(local_data, maxit, V_k=None, starting_vector=None, filename=Non
         H_i = np.zeros((local_data[0].shape[0], 1))  # dummy initialise the H_i matrix
         mot.start()
         for i in range(len(local_data)):
-            H_local = np.dot(local_data[i], G_list[i])
+            H_local = local_data[i].dot(G_list[i])
             tol.log_transmission( "H_local=CS", iterations, i, H_local ,id+1)
             H_i = H_i + H_local
         tol.log_transmission( "H_global=SC", iterations, 1, H_i ,id+1)
 
         for i in range(len(local_data)):
             if gradient:
-                G_list[i] = np.dot(local_data[i].T, H_i) + G_list[i]
+                G_list[i] = local_data[i].T.dot( H_i) + G_list[i]
             else:
-                G_list[i] = np.dot(local_data[i].T, H_i)
+                G_list[i] = local_data[i].T.dot( H_i)
         mot.stop()
         gi_norm = 0
         if V_k is None:
@@ -123,7 +123,7 @@ def simulate_guo(local_data, maxit, V_k=None, starting_vector=None, filename=Non
             for i in range(len(G_list)):
                 sum = []
                 for vi in range(Vk_list[i].shape[1]):
-                    dp = np.dot(G_list[i].T, Vk_list[i][:, vi:vi + 1]).flatten()
+                    dp = G_list[i].T.dot(Vk_list[i][:, vi:vi + 1]).flatten()
                     sum.append(dp)
                 # cast to numpy array to determine size
                 tol.log_transmission( "local_dot_prod=CS", iterations, i, np.asarray(sum), id+1)
@@ -167,7 +167,8 @@ def simulate_guo(local_data, maxit, V_k=None, starting_vector=None, filename=Non
         tol.log_transmission( "global_norm=SC", iterations, 1, gi_norm, id+1)
 
         G_i = np.concatenate(G_list, axis=0)
-        G_i_prev = G_i
+        G_i = np.asarray(G_i)
+        H_i = np.asarray(H_i)
         aol.log_current_accuracy(u[:, id:id + 1], G_i, eigenvals=[gi_norm], conv=deltaH, current_iteration=iterations,
                              choices=choices, precomputed_pca=precomputed_pca, current_ev=id + 1,
                                 v=v[:, id:id + 1], H_i=H_i)

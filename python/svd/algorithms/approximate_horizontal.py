@@ -1,11 +1,12 @@
-import numpy as np
 from svd.logging import *
 import svd.shared_functions as sh
 
 def approximate_vertical(data_list, k=10, factor_k=2, filename=None):
     data_list = [d.T for d in data_list]
     v, e = simulate_federated_horizontal_pca(data_list, k=k, factor_k=factor_k, filename=filename)
-    g = [np.dot(d, v)[:, 0:k] for d in data_list]
+    print('Computing dot product')
+    g = [d.dot(v)[:, 0:k] for d in data_list]
+    print('Done')
     return g, v
 
 
@@ -22,6 +23,7 @@ def simulate_federated_horizontal_pca(datasets, k=10, factor_k=2, filename=None)
         i =i+1
     print('Intermediate dimensions' +str(factor_k*k))
     dpca = aggregate_partial_SVDs(partial, factor_k*k)
+    print('Aggregation done')
     tol.log_transmission( "H_global=SC", -2, 1, dpca)
     tol.close()
     return dpca
@@ -41,7 +43,7 @@ def local_SVD(data, k=20):
     R = np.zeros((nd, nd))
     np.fill_diagonal(R, S[0:nd])
     U_r = UT[:, 0:nd]
-    P = np.dot(np.sqrt(R), U_r.T)
+    P = np.sqrt(R).dot(U_r.T)
     print(P.shape)
     return P
 

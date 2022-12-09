@@ -23,12 +23,30 @@ require(gridExtra)
 
 
 ```{r , echo=FALSE, warning=FALSE}
-x = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist/'
+ds = 'movielens'
+text = 'MOVIELENS'
+x = file.path('/home/anne/Documents/featurecloud/singular-value-decomposition/results/', ds)
 combine_data<-function(x){
   # Combine vector and matrix data sets.
   data1.0<-fread(file.path(x, 'matrix','summary.angles.u.tsv'))
   colnames(data1.0)<- c('iteration', paste0('Eigenvector ', 1:10), 'sites', 'Algorithm', 'filename')
   data1.0<- data1.0 %>% pivot_longer(-c(iteration, sites, Algorithm, filename), names_to='eigenvector', values_to = 'angle')
+  
+  # fill the data frame with the last angle for runs that finished early.
+  mi.global<-data1.0 %>% group_by(eigenvector, sites, Algorithm)%>% summarise(mi.g = max(iteration))
+  mi.file<-data1.0 %>% group_by(eigenvector, sites, Algorithm, filename)%>% summarise(mi.f = max(iteration), mi.a = min(angle))
+  mi.file<-merge(mi.file, mi.global, by = c('eigenvector', 'sites', 'Algorithm'))
+  mi.file$end_it<-mi.file$mi.g-mi.file$mi.f
+  mi.file <- mi.file %>% group_by(eigenvector, sites, Algorithm, filename) %>% slice(rep(1:n(), each = end_it))    
+  
+  mi.file.s <- mi.file %>%
+            group_by(eigenvector, sites,Algorithm, filename) %>%
+            mutate(mi.f=row_number(mi.f)+mi.f) %>%
+            ungroup() %>% 
+            select(mi.f, sites, Algorithm, filename, eigenvector, mi.a)
+  colnames(mi.file.s)<-colnames(data1.0)
+  data1.0<-rbind(data1.0, mi.file.s)
+
   
   data1<- data1.0 %>%
     group_by(iteration, sites, Algorithm, eigenvector) %>% summarise(mean_angle= mean(angle))
@@ -38,17 +56,33 @@ combine_data<-function(x){
   
   data2.0<-fread(file.path(x, 'vector','summary.angles.u.tsv'))
   colnames(data2.0)<-  c('eigenvector', 'iteration', 'angle' , 'sites', 'Algorithm', 'filename')
+  
+  # fill the data frame with the last angle for runs that finished early.
+  mi.global<-data2.0 %>% group_by(eigenvector, sites, Algorithm)%>% summarise(mi.g = max(iteration))
+  mi.file<-data2.0 %>% group_by(eigenvector, sites, Algorithm, filename)%>% summarise(mi.f = max(iteration), mi.a = min(angle))
+  mi.file<-merge(mi.file, mi.global, by = c('eigenvector', 'sites', 'Algorithm'))
+  mi.file$end_it<-mi.file$mi.g-mi.file$mi.f
+  mi.file <- mi.file %>% group_by(eigenvector, sites, Algorithm, filename) %>% slice(rep(1:n(), each = end_it))
+
+  mi.file.s <- mi.file %>%
+            group_by(eigenvector, sites,Algorithm, filename) %>%
+            mutate(mi.f.adj=row_number(mi.f)+mi.f) %>%
+            ungroup() %>%
+            select(eigenvector, mi.f.adj, mi.a, sites, Algorithm, filename, mi.f)
+  colnames(mi.file.s)<-c(colnames(data2.0), 'max_it')
+  data2.0<-rbind(data2.0, mi.file.s[,1:6])
+
   data2.0[, index:=1:.N, by=c('sites', 'Algorithm', 'eigenvector', 'filename')]
   data2 <- data2.0 %>% group_by(index, sites, Algorithm, eigenvector) %>% summarise(mean_angle= mean(angle))
   data2<- as.data.table(data2)
   colnames(data2)<-colnames(data1)
   
   
-  
   # Create an offset vector for vizualisation
-  offset<-data2 %>% group_by(eigenvector, sites, Algorithm)%>% summarise(offset=max(iteration)) %>% summarise(mean_offset = floor(mean(offset)))
+  offset<-mi.file.s  %>% group_by(eigenvector, sites, Algorithm)%>% summarise(offset=max(max_it)) %>% summarise(mean_offset = floor(mean(offset)))
   offset$eigenvector<-offset$eigenvector+1
   offset$mean_offset<-offset$mean_offset-1
+  
   
   #make sure the convergence line starts at the mean iteration to have one line
   data2<- data2 %>% left_join(offset)
@@ -88,7 +122,7 @@ combine_data<-function(x){
 # manually fix the scales for the convergence plots
 scales_x <- list(
   `Eigenvector 1` = scale_x_continuous(limits = c(1, 11)),
-  `Eigenvector 5` = scale_x_continuous(limits = c(1, 120)),
+  `Eigenvector 3` = scale_x_continuous(limits = c(1, 120)),
   `Eigenvector 10` =scale_x_continuous(limits = c(1,120))
   
 )
@@ -117,7 +151,7 @@ extra_theme <-theme(axis.text.y = element_text( size=8),
 ```
 
 ```{r, echo=FALSE, warning=FALSE}
-ob<-combine_data('/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist/')
+ob<-combine_data(file.path('/home/anne/Documents/featurecloud/singular-value-decomposition/results/',ds))
 data<-ob[[2]]
 iterations<-ob[[1]]
 ```
@@ -125,9 +159,10 @@ iterations<-ob[[1]]
 
 ```{r, echo=F}
 # plot the convergence lines.
-conv<-ggplot(data[eigenvector %in% c('Eigenvector 1',  'Eigenvector 5', 'Eigenvector 10')], 
+marker<-data[(iteration %% 10 ==0  | eigenvector == 'Eigenvector 1' & iteration %in% c(2,4,6,8)) & eigenvector %in% c('Eigenvector 1',  'Eigenvector 3', 'Eigenvector 10')]
+conv<-ggplot(data[eigenvector %in% c('Eigenvector 1',  'Eigenvector 3', 'Eigenvector 10')], 
              aes(iteration, mean_angle, group=interaction(Algorithm, Algorithm), color=Algorithm))+
-  geom_line(aes(linetype=Algorithm))+
+  geom_line(size=1)+ geom_point(data=marker, aes(x=iteration, y = mean_angle, shape=Algorithm,  group=interaction(Algorithm, Algorithm), color=Algorithm),size=2)+
   xlab('Iterations')+
   theme_classic()+
   ylab('Angles w.r.t reference')+
@@ -143,7 +178,7 @@ conv<-ggplot(data[eigenvector %in% c('Eigenvector 1',  'Eigenvector 5', 'Eigenve
 
 #Make side panel
 # Convert the plot to a grob
-text = 'MNIST'
+
 size=10
 gt <- ggplotGrob(conv)
 # Get the positions of the right strips in the layout: t = top, l = left, ...
@@ -169,11 +204,11 @@ conv
 
 ```{r , echo=FALSE}
 
-ggsave(file=paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/plots/convergence_mnist.pdf'), width = 18, units = 'cm', height = 8)
+ggsave(file=paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/plots/convergence_',ds,'.pdf'), width = 18, units = 'cm', height = 8)
 ```
 ```{r, echo=FALSE, warning=FALSE}
-eog<- fread('~/Documents/featurecloud/singular-value-decomposition/results/mnist/matrix/summary.eo.tsv')
-eo<-fread('/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist/vector/summary.eo.tsv')
+eog<- fread(file.path('~/Documents/featurecloud/singular-value-decomposition/results/',ds,'/matrix/summary.eo.tsv'))
+eo<-fread(file.path('/home/anne/Documents/featurecloud/singular-value-decomposition/results/',ds,'/vector/summary.eo.tsv'))
 eo<-rbind(eo, eog, use.names=F)
 eo$V4<-recode(eo$V4, 'power-approx'='AI-FULL', 'power-iteration'='RI-FULL', 'randomized'='RANDOMIZED', 'gradient'='GUO')
 eo<- eo[V4 %in% c('AI-FULL', 'RI-FULL', 'RANDOMIZED', 'GUO') ]
@@ -201,8 +236,8 @@ pl.iter<-ggplot(iterations, aes(Algorithm, maxit, fill=interaction(Algorithm, si
   scale_fill_manual(values=c(viridisLite::magma(4, end=0.7, alpha = 0.6), viridisLite::magma(4, end=0.7, alpha = 0.8)))
 
 
-transmission<-fread('~/Documents/featurecloud/singular-value-decomposition/results/mnist/matrix/summary.transmission.tsv')
-transmission_guo<-fread('~/Documents/featurecloud/singular-value-decomposition/results/mnist/vector/summary.transmission.tsv')
+transmission<-fread(file.path('~/Documents/featurecloud/singular-value-decomposition/results/',ds,'/matrix/summary.transmission.tsv'))
+transmission_guo<-fread(file.path('~/Documents/featurecloud/singular-value-decomposition/results/',ds,'/vector/summary.transmission.tsv'))
 transmission<-rbind(transmission_guo, transmission)
 transmission<-transmission[V2 %in% c("H_local=CS", "H_global=SC")]
 colnames(transmission) <- c('index', 'key', 'iteration', 'site', 'size', 'kA', 'sites', 'algorithm', 'filename')
@@ -235,7 +270,7 @@ legend_b <- get_legend(
                           legend.text = element_text(size = 8),
                           legend.title = element_text(size = 8))
 )
-text = 'MNIST'
+
 size=10
 text.grob = textGrob(text, rot = -90,
                      gp = gpar(fontsize = size))
@@ -252,7 +287,7 @@ gp
 
 
 ```{r, echo=FALSE}
-ggsave(file=paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/plots/benchmark_mnist.pdf'), width = 18, units = 'cm', height = 7.5)
+ggsave(file=paste0('/home/anne/Documents/featurecloud/singular-value-decomposition/results/plots/benchmark_',ds,'.pdf'), width = 18, units = 'cm', height = 7.5)
 ```
 
 ## 1000 Genomes

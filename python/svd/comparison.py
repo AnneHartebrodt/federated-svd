@@ -20,7 +20,7 @@ def angle(v1, v2):
     Returns: angle in degree or NaN
 
     """
-    dp = np.dot(v1, v2)
+    dp = v1.dot(v2)
     norm_x = la.norm(v1)
     norm_y = la.norm(v2)
     co = np.clip(dp / (norm_x * norm_y), -1, 1)
@@ -70,6 +70,8 @@ def compute_correlations(canonical, split, reported_angles=20):
 
         """
     correlations = list()
+    print(split.shape)
+    print(canonical.shape)
     for i in range(min(reported_angles, min(canonical.shape[1], split.shape[1]))):
         c = np.corrcoef(canonical[:, i], split[:, i])
         correlations.append(c[0,1])
@@ -99,8 +101,8 @@ def subspace_reconstruction_error_element_wise(data, eigenvectors):
     '''
     res = []
     for i in range(eigenvectors.shape[1]):
-        proj = np.dot(data, eigenvectors[:, 0:i])
-        rec = np.dot(proj, eigenvectors[:, 0:i].T)
+        proj = data.dot(eigenvectors[:, 0:i])
+        rec = proj.dot(eigenvectors[:, 0:i].T)
         res.append(np.linalg.norm(data - rec) / (data.shape[1] * data.shape[0]))
     return res
 
@@ -116,14 +118,14 @@ def subspace_reconstruction_error(data, eigenvectors):
     '''
     res = []
     for i in range(eigenvectors.shape[1]):
-        proj = np.dot(data, eigenvectors[:, 0:i])
-        rec = np.dot(proj, eigenvectors[:, 0:i].T)
+        proj = data.dot(eigenvectors[:, 0:i])
+        rec = proj.dot(eigenvectors[:, 0:i].T)
         res.append(np.round(np.linalg.norm(data - rec),2))
     return res
 
 def mev(u, truth):
     k = min(truth.shape[1], u.shape[1])  # number of eigenvectors in subspace
-    m = np.dot(u.T, truth)
+    m = u.T.dot(truth)
     sum = 0
     for i in range(k):
         sum = sum + np.linalg.norm(m[:, i], 2)
@@ -141,7 +143,7 @@ def angle360(v1, v2):
     Returns: angle in degree or NaN
 
     """
-    dp = np.dot(v1, v2)
+    dp = v1.dot(v2)
     norm_x = la.norm(v1)
     norm_y = la.norm(v2)
     co = np.clip(dp / (norm_x * norm_y), -1, 1)
