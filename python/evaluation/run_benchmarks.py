@@ -307,9 +307,10 @@ if __name__ == '__main__':
             data = pd.read_csv(path, header=args.header, sep=sep, index_col=args.rownames)
             data = sps.csc_matrix((data.iloc[:, 2], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
             if scale or center:
-                now= str(time.monotonic())
+                now= time.monotonic()
                 print('Start scaling'+ str(now))
                 means = data.mean(axis=0)
+                data= data.todense()
                 std = np.std(data, axis=0)
                 if center:
                     data = np.subtract(data, means)
