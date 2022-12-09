@@ -77,6 +77,8 @@ def scale_center_data(data, center=True, scale_variance=False):
 
     return data
 
+
+
 def scale_data_0_1(data):
     """
     Scaling to values between 0 and 1 by dividing througgh the column euclidean norm

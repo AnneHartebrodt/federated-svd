@@ -1,3 +1,4 @@
+import numpy as np
 
 from svd.algorithms.randomized import *
 from svd.algorithms.power_iteration import *
@@ -170,10 +171,23 @@ if __name__ == '__main__':
         print(data.shape)
         #data = data.todense()
         print(data.shape)
-        #ata, var = si.drop0Columns(data, None, drop=False, noise=True)
-        #data = si.scale_center_data_columnwise(data, center=True, scale_variance=True)
-        #nr_samples = data.shape[0]
-        #nr_features = data.shape[1]
+        scale = True
+        center = True
+        if scale or center:
+            means = data.mean(axis=0)
+            data = data.todense()
+            std = np.std(data, axis=0)
+            if center:
+                data = np.subtract(data, means)
+
+            # self.tabdata.scaled = np.delete(self.tabdata.scaled, remove)
+            # self.tabdata.rows = np.delete(self.tabdata.rows, remove)
+            if scale:
+                data = data / std
+
+            if center:
+                # impute. After centering, the mean should be 0, so this effectively mean imputation
+                data = np.nan_to_num(data, nan=0, posinf=0, neginf=0)
 
         dataset_name = 'movielens'
         maxit = 500
@@ -279,6 +293,7 @@ if __name__ == '__main__':
         elif filetype == 'mnist':
             data, test_lables = mi.load_mnist(path, 'train')
             data = coo_matrix.asfptype(data)
+
             if scale or center:
                 data = si.scale_center_data_columnwise(data, center=center, scale_variance=scale)
                 nr_samples = data.shape[0]
@@ -288,11 +303,21 @@ if __name__ == '__main__':
         elif filetype == 'sparse':
             data = pd.read_csv(path, header=args.header, sep=sep, rownames=args.rownames)
             data = sps.csc_matrix((data.iloc[:, 3], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
+
             if scale or center:
-                data = data.todense()
-                data = si.scale_center_data_columnwise(data, center=center, scale_variance=scale)
-                nr_samples = data.shape[0]
-                nr_features = data.shape[1]
+                means = data.mean(axis=0)
+                std = np.std(data, axis=0)
+                if center:
+                    data = np.subtract(data, means)
+
+                # self.tabdata.scaled = np.delete(self.tabdata.scaled, remove)
+                # self.tabdata.rows = np.delete(self.tabdata.rows, remove)
+                if scale:
+                    data = data / std
+
+                if center:
+                    # impute. After centering, the mean should be 0, so this effectively mean imputation
+                    data = np.nan_to_num(data, nan=0, posinf=0, neginf=0)
 
 
         elif filetype == 'gwas':
