@@ -131,9 +131,9 @@ def simulate_federated_qr(local_data):
             temp = ortho[i][d] / np.sqrt(norms[i])
             temp = np.asarray(temp)
             temp = np.squeeze(temp)
-            print(temp.shape)
-            print(isinstance(temp, np.ndarray))
-            print(isinstance(temp, np.matrix))
+            #print(temp.shape)
+            #print(isinstance(temp, np.ndarray))
+            #print(isinstance(temp, np.matrix))
 
             oo.append(temp)
         oo = np.stack(oo, axis = 1)
@@ -181,5 +181,5 @@ if __name__ == '__main__':
     data_list, choice = sh.partition_data_horizontally(data, 3)
     ortho, G_list, r2, rl = simulate_federated_qr(data_list)
 
-    print(np.linalg.norm(np.abs(q)-np.abs(ortho)))
-    print(np.linalg.norm(np.abs(r)-np.abs(r2)))
+    #print(np.linalg.norm(np.abs(q)-np.abs(ortho)))
+    #print(np.linalg.norm(np.abs(r)-np.abs(r2)))

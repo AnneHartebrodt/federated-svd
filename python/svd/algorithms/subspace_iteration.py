@@ -28,7 +28,7 @@ from svd.logging import *
 ####### MATRIX POWER ITERATION SCHEME #######
 def simulate_subspace_iteration(local_data, k, maxit, filename=None, u=None, choices=None, precomputed_pca=None, fractev=1.0,
                            federated_qr=False, v=None, gradient=False, epsilon=10e-9, g_ortho_freq=1000, g_init = None,
-                                previous_iterations=None):
+                                previous_iterations=None, final_ortho=True):
     """
     Simulate a federated run of principal component analysis using Guo et als algorithm in a modified version.
 
@@ -155,8 +155,10 @@ def simulate_subspace_iteration(local_data, k, maxit, filename=None, u=None, cho
     log_time_keywords(filename, 'matrix_operations-subspace_iteration', mot.total())
     tol.close()
     aol.close()
-    ortho, G_list, r, rlist = qr.simulate_federated_qr(G_list)
+    if final_ortho:
+        ortho, G_list, r, rlist = qr.simulate_federated_qr(G_list)
+    else:
+        G_list = None
     return G_i, eigenvals, converged_eigenvals, H_i, H_stack, iterations, G_list
-
 
 

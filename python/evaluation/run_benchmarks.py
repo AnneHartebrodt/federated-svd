@@ -71,11 +71,10 @@ def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsi
             # # simulate the run
 
             start = time.monotonic()
-
+            fedqr = False
             if 'RI-FULL' in algorithms:
                 # simultaneous only H
                 grad = False
-                fedqr = False
                 mode = 'power-iteration'
                 print('power - matrix - ' + mode)
                 outdir_gradient = op.join(outdir, 'matrix', str(s), mode)
@@ -314,7 +313,16 @@ if __name__ == '__main__':
 
         elif filetype == 'sparse':
             data = pd.read_csv(path, header=args.header, sep=sep, index_col=args.rownames)
+            print(data.head())
+            m = np.max(data.iloc[:,0])
+            n = np.max(data.iloc[:,1])
+            print(m)
+            print(data.iloc[:,1])
             data = sps.csc_matrix((data.iloc[:, 2], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
+            #remove completely empty rows and columns
+            data = data[data.getnnz(1)>0]
+            data = data[:,data.getnnz(0)>0]
+            print(data.shape)
             if scale or center:
                 now= time.monotonic()
                 print('Start scaling'+ str(now))
@@ -333,7 +341,8 @@ if __name__ == '__main__':
                     # impute. After centering, the mean should be 0, so this effectively mean imputation
                     data = np.nan_to_num(data, nan=0, posinf=0, neginf=0)
                 print('Finish scaling: Duration '+ str(time.monotonic()-now))
-
+            data = data.T
+            print(data.shape)
 
         elif filetype == 'gwas':
             bim = path + '.bim'
@@ -362,4 +371,4 @@ if __name__ == '__main__':
 
         os.makedirs(outdir, exist_ok=True)
         the_epic_loop(data=data, dataset_name=dataset_name, maxit=maxit, nr_repeats=nr_repeats, k=k, splits=splits,
-                        outdir=outdir, precomputed_pca=precomputed_pca, unequal=unequal, ortho_freq=ortho_freq)
+                outdir=outdir, precomputed_pca=precomputed_pca, unequal=unequal, ortho_freq=ortho_freq, algorithms=algorithms)

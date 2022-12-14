@@ -37,7 +37,7 @@ def angle(v1, v2):
         return a
 
 
-def compute_angles(canonical, split, reported_angles=20):
+def compute_angles(canonical, split):
     """
     Compute the angles of the vectors in a matrix with matching vectors
     in a second matrix.
@@ -51,7 +51,7 @@ def compute_angles(canonical, split, reported_angles=20):
 
     """
     angles = list()
-    for i in range(min(reported_angles, min(canonical.shape[1], split.shape[1]))):
+    for i in range(min(canonical.shape[1], split.shape[1])):
         a = angle(canonical[:, i], split[:, i])
         angles.append(np.around(a, 2))
     return angles
