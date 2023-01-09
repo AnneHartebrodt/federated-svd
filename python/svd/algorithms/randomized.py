@@ -4,6 +4,7 @@ import scipy.sparse.linalg as lsa
 from svd.logging import *
 import svd.shared_functions as sh
 import sklearn.utils.extmath as ex
+import scipy.sparse as sc
 
 def run_randomized(data_list, k, I, factor_k=2,filename=None, u=None, choices=None, precomputed_pca=None, fractev=1.0,
                            federated_qr=False, v=None, gradient=False, epsilon=10e-9, g_ortho_freq=1, g_init = None):
@@ -47,9 +48,14 @@ def run_randomized(data_list, k, I, factor_k=2,filename=None, u=None, choices=No
     tol.close()
     print('aggregated')
     H = np.flip(H, axis=1)
-    print('Compute covariance')
-    p = [ex.safe_sparse_dot(H.T,d) for d in data_list]
     print('Project data')
+    if sc.issparse(data_list[0]):
+        print('Sparse matrix')
+        p = [ex.safe_sparse_dot(H.T,d) for d in data_list]
+    else:
+        print('Dense matrix')
+        p = [H.T.dot(d) for d in data_list]
+    print('Compute covariance')
     covs = [p1.dot(p1.T) for p1 in p]
     print('compute inner SVD')
     u1,s1, v1 = lsa.svds(np.sum(covs, axis=0), k=k)
