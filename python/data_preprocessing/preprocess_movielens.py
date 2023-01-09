@@ -7,7 +7,7 @@ import scipy.sparse.linalg as lsa
 data = pd.read_csv('/home/anne/Downloads/ml-100k/u.data', header=None, sep='\t')
 from scipy.sparse import dok_matrix
 sp = sps.csc_matrix((data.iloc[:,3], (data.iloc[:,0], data.iloc[:, 1])), dtype='float32')
-
+sps.issparse(sp)
 sp.tobsr(blocksize=(), copy=True)
 u1,s1,v1 = lsa.svds(sp)
 u1 = np.flip(u1)

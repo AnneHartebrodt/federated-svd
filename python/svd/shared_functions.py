@@ -45,7 +45,7 @@ def variance_explained(eigenvalues, perc=0.5):
 
 def generate_random_gaussian(n, m):
     draws = n * m
-    noise = sc.random.normal(0, 1, draws)
+    noise = np.random.normal(0, 1, draws)
     #print('Generated random initial matrix: finished sampling')
     # make a matrix out of the noise
     noise.shape = (n, m)

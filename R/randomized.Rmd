@@ -1,0 +1,154 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r, echo=FALSE}
+require(data.table)
+require(ggplot2)
+require(dplyr)
+require(tidyr)
+require(cowplot)
+require(gtable)
+require(facetscales)
+require(ggpubr)
+require(grid)
+require(gridExtra)
+```
+
+
+```{r , echo=FALSE, warning=FALSE}
+ds = 'movielens/movielense-sparse'
+text = 'MOVIELENSE'
+x = file.path('/home/anne/Documents/featurecloud/singular-value-decomposition/results/', ds)
+combine_data<-function(x){
+  # Combine vector and matrix data sets.
+  data1.0<-fread(file.path(x, 'matrix','summary.angles.u.tsv'))
+  nev<-ncol(data1.0)-4
+  colnames(data1.0)<- c('iteration', paste0('Eigenvector ', 1:(ncol(data1.0)-4)), 'sites', 'Algorithm', 'filename')
+  data1.0<- data1.0 %>% pivot_longer(-c(iteration, sites, Algorithm, filename), names_to='eigenvector', values_to = 'angle')
+  
+  # fill the data frame with the last angle for runs that finished early.
+  mi.global<-data1.0 %>% group_by(eigenvector, sites, Algorithm)%>% summarise(mi.g = max(iteration))
+  mi.file<-data1.0 %>% group_by(eigenvector, sites, Algorithm, filename)%>% summarise(mi.f = max(iteration), mi.a = min(angle))
+  mi.file<-merge(mi.file, mi.global, by = c('eigenvector', 'sites', 'Algorithm'))
+  mi.file$end_it<-mi.file$mi.g-mi.file$mi.f
+  mi.file <- mi.file %>% group_by(eigenvector, sites, Algorithm, filename) %>% slice(rep(1:n(), each = end_it))    
+  
+  mi.file.s <- mi.file %>%
+            group_by(eigenvector, sites,Algorithm, filename) %>%
+            mutate(mi.f=row_number(mi.f)+mi.f) %>%
+            ungroup() %>% 
+            select(mi.f, sites, Algorithm, filename, eigenvector, mi.a)
+  colnames(mi.file.s)<-colnames(data1.0)
+  data1.0<-rbind(data1.0, mi.file.s)
+
+  
+  data1<- data1.0 %>%
+    group_by(iteration, sites, Algorithm, eigenvector) %>% summarise(mean_angle= mean(angle))
+  
+  data1<-as.data.table(data1)
+  data1$eigenvector<- sapply(data1$eigenvector, function(x) as.numeric(gsub('Eigenvector', '', x)))
+  
+  # save a dataframe containing the iterations.
+  iterations <-  rbind(data1.0) %>% group_by(sites, Algorithm, filename) %>% summarise(maxit = max(iteration))
+
+  data<-data1
+  # add nice facet labels
+  data$eigenvector<-paste0('Eigenvector ', data$eigenvector)
+  data$eigenvector<-ordered(data$eigenvector, levels = paste0('Eigenvector ', 1:nev))
+  data$Algorithm<-recode(data$Algorithm, 'power-approx'='AI-FULL', 'power-iteration'='RI-FULL', 'randomized'='RANDOMIZED', 'gradient'='GUO')
+  
+  return(list(iterations, data))
+}
+
+```
+
+```{r, show=F, echo=FALSE, warning=FALSE}
+# manually fix the scales for the convergence plots
+scales_x <- list(
+  `Eigenvector 1` = scale_x_continuous(limits = c(1, 11)),
+  `Eigenvector 3` = scale_x_continuous(limits = c(1, 120)),
+  `Eigenvector 10` =scale_x_continuous(limits = c(1,120))
+  
+)
+
+#manually set the breaks for the convergence plots
+breaks_fun <- function(x) {
+  if (max(x)>1000){
+    seq(500, max(x), 500)
+  }
+  else if (max(x) > 500) {
+    seq(250, max(x), 250)
+  } else if (max(x)> 250) {
+    seq(100, max(x), 150)
+  }
+  else{
+    seq(50, max(x), 100)
+  }
+}
+# make a nice minimal theme
+extra_theme <-theme(axis.text.y = element_text( size=8),
+                    axis.title = element_text(size=9),
+                    plot.margin = unit(c(0.2, 0.2, 0.2, 0.2), "cm"),
+                    legend.margin = margin(t = -12, r = 0, b = 0, l = 0),
+                    axis.text.x = element_text(angle = 90 , size = 8, hjust = 1, vjust = 0.5, margin = margin(t = 1, r = 0, b = 0, l = 0)))
+
+```
+
+```{r, echo=FALSE, warning=FALSE}
+ob<-combine_data(file.path('/home/anne/Documents/featurecloud/singular-value-decomposition/results/',ds))
+data<-ob[[2]]
+iterations<-ob[[1]]
+```
+
+```{r, echo=FALSE, warning=FALSE}
+ds1 = 'movielens/movielense-sparse'
+text = 'MOVIELENSE'
+x = file.path('/home/anne/Documents/featurecloud/singular-value-decomposition/results/', ds1)
+eog<- fread(file.path('~/Documents/featurecloud/singular-value-decomposition/results/',ds1,'/matrix/summary.eo.tsv'))
+eog$dataset<-'SPARSE'
+
+ds2 = 'movielens/movielense-dense'
+text = 'MOVIELENSE'
+x = file.path('/home/anne/Documents/featurecloud/singular-value-decomposition/results/', ds2)
+eog2<- fread(file.path('~/Documents/featurecloud/singular-value-decomposition/results/',ds2,'/matrix/summary.eo.tsv'))
+eog2$dataset<-'DENSE'
+eo<-rbind(eog, eog2)
+
+eo$V4<-recode(eo$V4, 'power-approx'='AI-FULL', 'power-iteration'='RI-FULL', 'randomized'='RANDOMIZED', 'gradient'='GUO')
+eo<- eo[V4 %in% c('AI-FULL', 'RI-FULL', 'RANDOMIZED', 'GUO') ]
+eo <- eo %>% group_by(V3,V4,V5, dataset) %>% summarise(sum=sum(V2))
+pl.eo<-ggplot(eo)+geom_boxplot(aes(V4, sum, fill=interaction(V4,dataset)))+ylab('Runtime[s] (Matrix oper.)')+xlab('')+
+  theme_classic()+
+  extra_theme+
+  guides(fill=FALSE, color=F)+
+  scale_fill_manual(values=rep(c(viridisLite::cividis(2, alpha = 0.8))))
+pl.eo
+
+
+transmission1<-fread(file.path('~/Documents/featurecloud/singular-value-decomposition/results/',ds1,'/matrix/summary.transmission.tsv'))
+transmission1$dataset<-'SPARSE'
+transmission2<-fread(file.path('~/Documents/featurecloud/singular-value-decomposition/results/',ds2,'/matrix/summary.transmission.tsv'))
+transmission2$dataset<-'DENSE'
+transmission<-rbind(transmission1, transmission2)
+transmission<-transmission[V2 %in% c("H_local=CS", "H_global=SC")]
+colnames(transmission) <- c('index', 'key', 'iteration', 'site', 'size', 'kA', 'sites', 'algorithm', 'filename', 'dataset')
+transmission<-transmission[site==1]
+volume<-transmission %>% select(size, sites, algorithm, filename, dataset)%>% group_by(sites, algorithm, filename, dataset)%>% summarise(total_volume=(sum(size)*4)/1000000000)
+
+volume<-as.data.table(volume)
+volume$algorithm<-recode(volume$algorithm, 'power-approx'='AI-FULL', 'power-iteration'='RI-FULL', 'randomized'='RANDOMIZED', 'gradient'='GUO')
+volume<- volume[algorithm %in% c( 'RI-FULL', 'AI-FULL', 'RANDOMIZED', 'GUO')]
+
+
+pl.volume<-ggplot(volume)+
+    geom_boxplot(aes(algorithm, total_volume, fill=interaction(algorithm, dataset)))+
+  ylab('Total transmitted\n data [GB]')+
+  xlab('')+
+  theme_classic()+
+  extra_theme+
+  guides(fill=FALSE, color=F)+
+  scale_fill_manual(values=rep(c(viridisLite::cividis(2, alpha = 0.8)), each=4))
+
+

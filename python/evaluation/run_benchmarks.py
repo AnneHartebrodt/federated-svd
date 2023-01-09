@@ -1,6 +1,3 @@
-import time
-
-import numpy as np
 
 from svd.algorithms.randomized import *
 from svd.algorithms.power_iteration import *
@@ -156,29 +153,65 @@ def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsi
 
 
 
+def convert_h5_to_sparse_csr(filename, out_filename, chunksize=2500):
+    start = 0
+    total_rows = 0
+
+    sparse_chunks_data_list = []
+    chunks_index_list = []
+    columns_name = None
+    while True:
+        df_chunk = pd.read_hdf(filename, start=start, stop=start + chunksize)
+        if len(df_chunk) == 0:
+            break
+        chunk_data_as_sparse = sc.sparse.csr_matrix(df_chunk.to_numpy())
+        sparse_chunks_data_list.append(chunk_data_as_sparse)
+        chunks_index_list.append(df_chunk.index.to_numpy())
+
+        if columns_name is None:
+            columns_name = df_chunk.columns.to_numpy()
+        else:
+            assert np.all(columns_name == df_chunk.columns.to_numpy())
+
+        total_rows += len(df_chunk)
+        print(total_rows)
+        if len(df_chunk) < chunksize:
+            del df_chunk
+            break
+        del df_chunk
+        start += chunksize
+
+    all_data_sparse = sc.sparse.vstack(sparse_chunks_data_list)
+    del sparse_chunks_data_list
+
+    return  all_data_sparse
+
+
+
+
 ####### BENCHMARK RUNNER #######
 
 if __name__ == '__main__':
-    local=False
+    local=True
     np.random.seed(11)
     if local:
         start = time.monotonic()
         #data, sample_ids, variable_names = si.data_import('/home/anne/Documents/featurecloud/singular-value-decomposition/data/tabular/movielens.tsv', header=None, rownames=None, sep='\t')
-        #data, test_lables = mi.load_mnist('/home/anne/Documents/featurecloud/pca/vertical-pca/data/mnist/raw', 'train')
-        # data, test_labels = mi.load_mnist(input_dir, 'train')
-        #data = coo_matrix.asfptype(data)
+        data, test_lables = mi.load_mnist('/home/anne/Documents/featurecloud/pca/vertical-pca/data/mnist/raw', 'train')
+        #data, test_labels = mi.load_mnist(input_dir, 'train')
+        data = coo_matrix.asfptype(data)
         #
-        #dataset_name = 'mnist'
-        data = pd.read_csv('/home/anne/Downloads/ml-100k/u.data', header=None, sep='\t')
-        data = sps.csc_matrix((data.iloc[:, 3], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
-        print(data.shape)
+        dataset_name = 'mnist'
+        #data = pd.read_csv('/home/anne/Downloads/ml-100k/u.data', header=None, sep='\t')
+        #data = sps.csc_matrix((data.iloc[:, 3], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
+        #print(data.shape)
         #data = data.todense()
-        print(data.shape)
+        #print(data.shape)
         scale = True
         center = True
         if scale or center:
             means = data.mean(axis=0)
-            data = data.todense()
+            #data = data.todense()
             std = np.std(data, axis=0)
             if center:
                 data = np.subtract(data, means)
@@ -192,18 +225,19 @@ if __name__ == '__main__':
                 # impute. After centering, the mean should be 0, so this effectively mean imputation
                 data = np.nan_to_num(data, nan=0, posinf=0, neginf=0)
 
-        dataset_name = 'movielens'
+        #dataset_name = 'movielens'
         maxit = 500
-        nr_repeats = 3
+        nr_repeats = 10
         k = 10
         splits = [5, 10]
         #outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist'
-        algorithms = 'RANDOMIZED,GUO,AI-FULL,RI-FULL'
+        #algorithms = 'RANDOMIZED,GUO,AI-FULL,RI-FULL'
+        algorithms = 'GUO'
         algorithms = algorithms.strip().split(',')
-        print(algorithms)
-
-        outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/movielens'
-        the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsilon=1e-9,
+        tolerance = 1e-6
+        guo_tolerance = 1e-8
+        outdir = '/home/anne/Documents/featurecloud/singular-value-decomposition/results/mnist-6'
+        the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsilon=tolerance, guo_epsilon=guo_tolerance,
                                            unequal=False, precomputed_pca=None, ortho_freq=1000, algorithms=algorithms)
         print('TIME: '+ str(time.monotonic() - start))
         outd = ['matrix', 'vector']
@@ -312,7 +346,10 @@ if __name__ == '__main__':
             data = data.T
 
         elif filetype == 'sparse':
-            data = pd.read_csv(path, header=args.header, sep=sep, index_col=args.rownames)
+            if path.endswith('.h5'):
+                data = convert_h5_to_sparse_csr(os.path.join(path, "train_multi_targets.h5"))
+            else:
+                data = pd.read_csv(path, header=args.header, sep=sep, index_col=args.rownames)
             print(data.head())
             m = np.max(data.iloc[:,0])
             n = np.max(data.iloc[:,1])
@@ -372,3 +409,12 @@ if __name__ == '__main__':
         os.makedirs(outdir, exist_ok=True)
         the_epic_loop(data=data, dataset_name=dataset_name, maxit=maxit, nr_repeats=nr_repeats, k=k, splits=splits,
                 outdir=outdir, precomputed_pca=precomputed_pca, unequal=unequal, ortho_freq=ortho_freq, algorithms=algorithms)
+
+        outd = ['matrix', 'vector']
+        for od in outd:
+            basepath = op.join(outdir,od)
+            for suf in ['.angles.u', '.angles.v', '.mev.u', 'mev.v', '.transmission', '.eo' ]:
+                try:
+                    create_dataframe(basepath=basepath, suffix=suf)
+                except:
+                    pass
