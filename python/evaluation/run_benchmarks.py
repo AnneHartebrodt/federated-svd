@@ -1,3 +1,14 @@
+import os
+os.environ["OMP_NUM_THREADS"] = "8" # export OMP_NUM_THREADS=4
+os.environ["OPENBLAS_NUM_THREADS"] = "8" # export OPENBLAS_NUM_THREADS=4
+os.environ["MKL_NUM_THREADS"] = "8" # export MKL_NUM_THREADS=6
+os.environ["VECLIB_MAXIMUM_THREADS"] = "8" # export VECLIB_MAXIMUM_THREADS=4
+os.environ["NUMEXPR_NUM_THREADS"] = "8" # export NUMEXPR_NUM_THREADS=6
+
+
+import time
+
+import numpy as np
 
 from svd.algorithms.randomized import *
 from svd.algorithms.power_iteration import *
@@ -192,7 +203,7 @@ def convert_h5_to_sparse_csr(filename, out_filename, chunksize=2500):
 ####### BENCHMARK RUNNER #######
 
 if __name__ == '__main__':
-    local=True
+    local=False
     np.random.seed(11)
     if local:
         start = time.monotonic()

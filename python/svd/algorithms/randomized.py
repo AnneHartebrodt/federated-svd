@@ -48,15 +48,14 @@ def run_randomized(data_list, k, I, factor_k=2,filename=None, u=None, choices=No
     tol.close()
     print('aggregated')
     H = np.flip(H, axis=1)
-    print('Compute covariance')
+    print('Project data')
     if sc.issparse(data_list[0]):
         print('Sparse matrix')
         p = [ex.safe_sparse_dot(H.T,d) for d in data_list]
     else:
         print('Dense matrix')
         p = [H.T.dot(d) for d in data_list]
-
-    print('Project data')
+    print('Compute covariance')
     covs = [p1.dot(p1.T) for p1 in p]
     print('compute inner SVD')
     u1,s1, v1 = lsa.svds(np.sum(covs, axis=0), k=k)
