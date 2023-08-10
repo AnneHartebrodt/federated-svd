@@ -1,9 +1,9 @@
 import os
-os.environ["OMP_NUM_THREADS"] = "8" # export OMP_NUM_THREADS=4
-os.environ["OPENBLAS_NUM_THREADS"] = "8" # export OPENBLAS_NUM_THREADS=4
-os.environ["MKL_NUM_THREADS"] = "8" # export MKL_NUM_THREADS=6
-os.environ["VECLIB_MAXIMUM_THREADS"] = "8" # export VECLIB_MAXIMUM_THREADS=4
-os.environ["NUMEXPR_NUM_THREADS"] = "8" # export NUMEXPR_NUM_THREADS=6
+#os.environ["OMP_NUM_THREADS"] = "8" # export OMP_NUM_THREADS=4
+#os.environ["OPENBLAS_NUM_THREADS"] = "8" # export OPENBLAS_NUM_THREADS=4
+#os.environ["MKL_NUM_THREADS"] = "8" # export MKL_NUM_THREADS=6
+#os.environ["VECLIB_MAXIMUM_THREADS"] = "8" # export VECLIB_MAXIMUM_THREADS=4
+#os.environ["NUMEXPR_NUM_THREADS"] = "8" # export NUMEXPR_NUM_THREADS=6
 
 
 import time
@@ -164,7 +164,7 @@ def the_epic_loop(data, dataset_name, maxit, nr_repeats, k, splits, outdir, epsi
 
 
 
-def convert_h5_to_sparse_csr(filename, out_filename, chunksize=2500):
+def convert_h5_to_sparse_csr(filename, chunksize=2500):
     start = 0
     total_rows = 0
 
@@ -358,19 +358,19 @@ if __name__ == '__main__':
 
         elif filetype == 'sparse':
             if path.endswith('.h5'):
-                data = convert_h5_to_sparse_csr(os.path.join(path, "train_multi_targets.h5"))
+                data = convert_h5_to_sparse_csr(os.path.join(path))
             else:
                 data = pd.read_csv(path, header=args.header, sep=sep, index_col=args.rownames)
-            print(data.head())
-            m = np.max(data.iloc[:,0])
-            n = np.max(data.iloc[:,1])
-            print(m)
-            print(data.iloc[:,1])
-            data = sps.csc_matrix((data.iloc[:, 2], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
-            #remove completely empty rows and columns
-            data = data[data.getnnz(1)>0]
-            data = data[:,data.getnnz(0)>0]
-            print(data.shape)
+                #print(data.head())
+                m = np.max(data.iloc[:,0])
+                n = np.max(data.iloc[:,1])
+                #print(m)
+                #print(data.iloc[:,1])
+                data = sps.csc_matrix((data.iloc[:, 2], (data.iloc[:, 0], data.iloc[:, 1])), dtype='float32')
+                #remove completely empty rows and columns
+                data = data[data.getnnz(1)>0]
+                data = data[:,data.getnnz(0)>0]
+                print(data.shape)
             if scale or center:
                 now= time.monotonic()
                 print('Start scaling'+ str(now))
